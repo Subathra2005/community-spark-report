@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Select,
   SelectContent,
@@ -19,7 +20,6 @@ import {
   Lock,
   User,
   Building,
-  AlertCircle,
   Eye,
   EyeOff
 } from "lucide-react";
@@ -27,7 +27,9 @@ import {
 const Signup = () => {
   const [activeTab, setActiveTab] = useState("citizen");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { signup } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [citizenData, setCitizenData] = useState({
     name: "",
@@ -58,13 +60,45 @@ const Signup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
-    // Simulate registration process
-    setTimeout(() => {
-      setIsLoading(false);
-      // Would redirect to login or dashboard
-    }, 1500);
+    const data = activeTab === "citizen" ? citizenData : adminData;
+    
+    if (data.password !== data.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const success = await signup({
+      name: data.name,
+      email: data.email,
+      password: data.password,
+      role: activeTab === "citizen" ? "user" : "admin",
+      department: activeTab === "admin" ? adminData.department : undefined,
+      departmentId: activeTab === "admin" ? adminData.departmentId : undefined,
+    });
+
+    if (success) {
+      toast({
+        title: "Account created successfully",
+        description: "Welcome to CivicReport!",
+      });
+      
+      if (activeTab === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
+    } else {
+      toast({
+        title: "Error",
+        description: "Email already exists",
+        variant: "destructive",
+      });
+    }
   };
 
   const isCitizenFormValid = citizenData.name && citizenData.email && 
@@ -85,13 +119,6 @@ const Signup = () => {
           </p>
         </div>
 
-        {/* Backend Integration Notice */}
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            User registration requires Supabase backend integration. Click the green Supabase button to connect.
-          </AlertDescription>
-        </Alert>
 
         {/* Registration Form */}
         <Card>
@@ -185,19 +212,10 @@ const Signup = () => {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={!isCitizenFormValid || isLoading}
+                    disabled={!isCitizenFormValid}
                   >
-                    {isLoading ? (
-                      <>
-                        <UserPlus className="mr-2 h-4 w-4 animate-spin" />
-                        Creating Account...
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Create Citizen Account
-                      </>
-                    )}
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Create Citizen Account
                   </Button>
                 </form>
               </TabsContent>
@@ -318,19 +336,10 @@ const Signup = () => {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={!isAdminFormValid || isLoading}
+                    disabled={!isAdminFormValid}
                   >
-                    {isLoading ? (
-                      <>
-                        <UserPlus className="mr-2 h-4 w-4 animate-spin" />
-                        Creating Account...
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Create Admin Account
-                      </>
-                    )}
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Create Admin Account
                   </Button>
                 </form>
               </TabsContent>

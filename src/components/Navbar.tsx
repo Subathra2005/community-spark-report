@@ -7,7 +7,11 @@ import {
   Search, 
   User, 
   LogOut,
-  Settings
+  Settings,
+  Home,
+  FileText,
+  CheckSquare,
+  BarChart3
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -16,21 +20,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const Navbar = () => {
   const location = useLocation();
+  const { user, logout } = useAuth();
   const isActive = (path: string) => location.pathname === path;
-  
-  // Mock user state - replace with actual auth context
-  const isLoggedIn = false;
-  const userRole = "user"; // user, admin, super_admin
 
-  const navigation = [
+  const userNavigation = [
     { name: "Home", href: "/", icon: AlertCircle },
     { name: "Heatmaps", href: "/heatmaps", icon: MapPin },
     { name: "Raise Problem", href: "/report", icon: PlusCircle },
     { name: "Check Status", href: "/status", icon: Search },
   ];
+
+  const adminNavigation = [
+    { name: "Dashboard", href: "/admin", icon: Home },
+    { name: "Issue Management", href: "/admin/issues", icon: FileText },
+    { name: "My Problems", href: "/admin/my-problems", icon: CheckSquare },
+    { name: "Completed", href: "/admin/completed", icon: BarChart3 },
+  ];
+
+  const navigation = user?.role === "admin" ? adminNavigation : userNavigation;
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -60,29 +71,34 @@ export const Navbar = () => {
 
         {/* Right Side - Auth */}
         <div className="flex items-center space-x-4">
-          {isLoggedIn ? (
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="flex items-center space-x-2">
                   <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">Profile</span>
+                  <span className="hidden sm:inline">{user.name}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem asChild>
-                  <Link to="/profile" className="flex items-center space-x-2">
+                  <Link to={user.role === "admin" ? "/admin/profile" : "/profile"} className="flex items-center space-x-2">
                     <User className="h-4 w-4" />
                     <span>View Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings" className="flex items-center space-x-2">
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </Link>
-                </DropdownMenuItem>
+                {user.role !== "admin" && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="flex items-center space-x-2">
+                      <Settings className="h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="flex items-center space-x-2 text-destructive">
+                <DropdownMenuItem 
+                  onClick={logout}
+                  className="flex items-center space-x-2 text-destructive cursor-pointer"
+                >
                   <LogOut className="h-4 w-4" />
                   <span>Log Out</span>
                 </DropdownMenuItem>

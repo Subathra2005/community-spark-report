@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   LogIn, 
   Mail, 
@@ -20,17 +22,35 @@ const Login = () => {
     password: ""
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false);
-      // Would redirect based on user role
-    }, 1500);
+    const success = await login(formData.email, formData.password);
+    
+    if (success) {
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+      
+      // Redirect based on role
+      const currentUser = JSON.parse(localStorage.getItem("civic_user") || "{}");
+      if (currentUser.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
+    } else {
+      toast({
+        title: "Login failed",
+        description: "Invalid email or password",
+        variant: "destructive",
+      });
+    }
   };
 
   const isFormValid = formData.email && formData.password;
@@ -46,13 +66,6 @@ const Login = () => {
           </p>
         </div>
 
-        {/* Backend Integration Notice */}
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Authentication requires Supabase backend integration. Click the green Supabase button to connect.
-          </AlertDescription>
-        </Alert>
 
         {/* Login Form */}
         <Card>
@@ -106,20 +119,11 @@ const Login = () => {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={!isFormValid || isLoading}
+                disabled={!isFormValid}
                 size="lg"
               >
-                {isLoading ? (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4 animate-spin" />
-                    Signing In...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Sign In
-                  </>
-                )}
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
               </Button>
 
               {/* Forgot Password */}
